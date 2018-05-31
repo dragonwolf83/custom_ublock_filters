@@ -1,0 +1,44 @@
+# Resources to be used as redirect destinations.
+#
+# - Each distinct resource entry is separated by an empty line.
+# - The first line in a resource entry is: token mime-type[;encoding]
+# - All following lines are the data. An empty line signals the end of the
+#   data.
+#
+# If the encoding is absent, the data will be converted to base64, and the
+# encoding will be set to `;base64`.
+
+
+# Prevent web pages from using RTCPeerConnection(), and report attempts in console.
+nowebrtc_zephyr.js application/javascript
+(function() {
+	var rtcName = window.RTCPeerConnection ? 'RTCPeerConnection' : (
+		window.webkitRTCPeerConnection ? 'webkitRTCPeerConnection' : ''
+	);
+	if ( rtcName === '' ) { return; }
+	var log = console.log.bind(console);
+	var pc = function(cfg) {
+		log('Document tried to create an RTCPeerConnection: %o', cfg);
+	};
+	var noop = function() {
+		;
+	};
+	pc.prototype = {
+		close: noop,
+		createDataChannel: noop,
+		createOffer: noop,
+		setRemoteDescription: noop
+	};
+	var z = window[rtcName];
+	window[rtcName] = pc.bind(window);
+	if ( z.prototype ) {
+		z.prototype.createDataChannel = function(a, b) {
+			return {
+				close: function() {},
+				send: function() {}
+			};
+		}.bind(null);
+	}
+})();
+
+
